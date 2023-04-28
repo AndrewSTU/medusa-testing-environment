@@ -1,0 +1,27 @@
+- name: fork
+  constable: |
+    all_domains fork {
+      log_proc("allowed-fork");
+      return ALLOW;
+    }
+  execution:
+    command: echo "Haf"; sleep 5 & echo "Stek";
+    results:
+      constable: fork
+      dmesg: allowed-fork
+      return_code: 0
+
+- name: kill
+  constable: |
+    * kill * {
+      log_proc("kill");
+      return DENY;
+    }
+  setup:
+    - top &
+  execution:
+    command: pgrep top | xargs kill -s KILL
+    results:
+      constable: kill
+      dmesg: kill
+      return_code: 1

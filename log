@@ -1,0 +1,75 @@
+2023-04-27 19:48:03,183 [DEBUG]: [chan 0] EOF sent (0)
+2023-04-27 19:48:03,183 [DEBUG]: Dropping user packet because connection is dead.
+2023-04-27 19:48:03,201 [DEBUG]: [chan 1] EOF sent (1)
+2023-04-27 19:48:03,201 [DEBUG]: Dropping user packet because connection is dead.
+2023-04-27 19:48:05,040 [DEBUG]: Popen(['git', 'version'], cwd=C:\Users\andre\Documents\FEI STU\DP\medusa-new, universal_newlines=False, shell=None, istream=None)
+2023-04-27 19:48:05,089 [DEBUG]: Popen(['git', 'version'], cwd=C:\Users\andre\Documents\FEI STU\DP\medusa-new, universal_newlines=False, shell=None, istream=None)
+2023-04-27 19:48:05,271 [INFO]: Loading configuration...
+2023-04-27 19:48:05,279 [DEBUG]: Loading configuration from config.ini...
+2023-04-27 19:48:05,284 [DEBUG]: Configuration loading complete.
+2023-04-27 19:48:05,286 [INFO]: Configuration loaded.
+2023-04-27 19:48:05,287 [INFO]: Running setup...
+2023-04-27 19:48:05,290 [DEBUG]: Validating virtual machine...
+2023-04-27 19:48:05,420 [DEBUG]: Running virtual box version: 7.0.6
+2023-04-27 19:48:05,424 [DEBUG]: Virtual machine MedusaBookworm found.
+2023-04-27 19:48:05,429 [DEBUG]: Git tests are present, checking for updates...
+2023-04-27 19:48:06,020 [DEBUG]: Updated git tests.
+2023-04-27 19:48:06,021 [INFO]: Setup complete.
+2023-04-27 19:48:06,023 [INFO]: Loading tests...
+2023-04-27 19:48:06,025 [DEBUG]: Listing git tests...
+2023-04-27 19:48:06,028 [DEBUG]: Listing git tests complete.
+2023-04-27 19:48:06,030 [DEBUG]: Listing local tests...
+2023-04-27 19:48:06,034 [DEBUG]: Listing local tests complete.
+2023-04-27 19:48:06,036 [INFO]: Tests have been loaded.
+2023-04-27 19:48:16,569 [INFO]: Preparing selected tests for transfer...
+2023-04-27 19:48:16,573 [INFO]: Preparing tests for transfer...
+2023-04-27 19:48:16,579 [INFO]: Tests are ready for transfer.
+2023-04-27 19:48:16,584 [INFO]: Tests are ready for transfer.
+2023-04-27 19:48:16,587 [INFO]: Establishing connection to remote...
+2023-04-27 19:48:16,590 [DEBUG]: Checking virtual machine...
+2023-04-27 19:48:16,594 [DEBUG]: Starting virtual machine...
+2023-04-27 19:48:24,872 [DEBUG]: Virtual machine has started.
+2023-04-27 19:48:24,885 [DEBUG]: Validating SSH connection...
+2023-04-27 19:48:24,892 [DEBUG]: starting thread (client mode): 0x3fffa650
+2023-04-27 19:48:24,892 [DEBUG]: Local version/idstring: SSH-2.0-paramiko_3.1.0
+2023-04-27 19:48:36,916 [ERROR]: Exception (client): Error reading SSH protocol banner[WinError 10054] An existing connection was forcibly closed by the remote host
+2023-04-27 19:48:36,918 [ERROR]: Traceback (most recent call last):
+2023-04-27 19:48:36,918 [ERROR]:   File "C:\Users\andre\Documents\FEI STU\DP\medusa-new\venv\Lib\site-packages\paramiko\transport.py", line 2270, in _check_banner
+2023-04-27 19:48:36,919 [ERROR]:     buf = self.packetizer.readline(timeout)
+2023-04-27 19:48:36,919 [ERROR]:           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2023-04-27 19:48:36,919 [ERROR]:   File "C:\Users\andre\Documents\FEI STU\DP\medusa-new\venv\Lib\site-packages\paramiko\packet.py", line 374, in readline
+2023-04-27 19:48:36,919 [ERROR]:     buf += self._read_timeout(timeout)
+2023-04-27 19:48:36,919 [ERROR]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2023-04-27 19:48:36,919 [ERROR]:   File "C:\Users\andre\Documents\FEI STU\DP\medusa-new\venv\Lib\site-packages\paramiko\packet.py", line 601, in _read_timeout
+2023-04-27 19:48:36,919 [ERROR]:     x = self.__socket.recv(128)
+2023-04-27 19:48:36,919 [ERROR]:         ^^^^^^^^^^^^^^^^^^^^^^^
+2023-04-27 19:48:36,919 [ERROR]: ConnectionResetError: [WinError 10054] An existing connection was forcibly closed by the remote host
+2023-04-27 19:48:36,919 [ERROR]: 
+2023-04-27 19:48:36,919 [ERROR]: During handling of the above exception, another exception occurred:
+2023-04-27 19:48:36,919 [ERROR]: 
+2023-04-27 19:48:36,919 [ERROR]: Traceback (most recent call last):
+2023-04-27 19:48:36,919 [ERROR]:   File "C:\Users\andre\Documents\FEI STU\DP\medusa-new\venv\Lib\site-packages\paramiko\transport.py", line 2093, in run
+2023-04-27 19:48:36,920 [ERROR]:     self._check_banner()
+2023-04-27 19:48:36,920 [ERROR]:   File "C:\Users\andre\Documents\FEI STU\DP\medusa-new\venv\Lib\site-packages\paramiko\transport.py", line 2274, in _check_banner
+2023-04-27 19:48:36,920 [ERROR]:     raise SSHException(
+2023-04-27 19:48:36,920 [ERROR]: paramiko.ssh_exception.SSHException: Error reading SSH protocol banner[WinError 10054] An existing connection was forcibly closed by the remote host
+2023-04-27 19:48:36,920 [ERROR]: 
+2023-04-27 19:48:45,795 [DEBUG]: Popen(['git', 'version'], cwd=C:\Users\andre\Documents\FEI STU\DP\medusa-new, universal_newlines=False, shell=None, istream=None)
+2023-04-27 19:48:45,845 [DEBUG]: Popen(['git', 'version'], cwd=C:\Users\andre\Documents\FEI STU\DP\medusa-new, universal_newlines=False, shell=None, istream=None)
+2023-04-27 19:48:46,051 [INFO]: Loading configuration...
+2023-04-27 19:48:46,059 [DEBUG]: Loading configuration from config.ini...
+2023-04-27 19:48:46,063 [DEBUG]: Configuration loading complete.
+2023-04-27 19:48:46,065 [INFO]: Configuration loaded.
+2023-04-27 19:48:46,067 [INFO]: Running setup...
+2023-04-27 19:48:46,070 [DEBUG]: Validating virtual machine...
+2023-04-27 19:48:46,200 [DEBUG]: Running virtual box version: 7.0.6
+2023-04-27 19:48:46,204 [DEBUG]: Virtual machine MedusaBookworm found.
+2023-04-27 19:48:46,208 [DEBUG]: Git tests are present, checking for updates...
+2023-04-27 19:48:46,815 [DEBUG]: Updated git tests.
+2023-04-27 19:48:46,817 [INFO]: Setup complete.
+2023-04-27 19:48:46,819 [INFO]: Loading tests...
+2023-04-27 19:48:46,820 [DEBUG]: Listing git tests...
+2023-04-27 19:48:46,823 [DEBUG]: Listing git tests complete.
+2023-04-27 19:48:46,826 [DEBUG]: Listing local tests...
+2023-04-27 19:48:46,829 [DEBUG]: Listing local tests complete.
+2023-04-27 19:48:46,831 [INFO]: Tests have been loaded.

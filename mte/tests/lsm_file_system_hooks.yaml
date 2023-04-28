@@ -1,0 +1,292 @@
+- name: mkdir ALLOW
+  constable: |
+    all_domains mkdir allowed {
+      log_proc("allowed-mkdir");
+      return ALLOW;
+    }
+  execution:
+    command: mkdir allowed/test
+    results:
+      constable: mkdir
+      dmesg: allowed-mkdir
+      return_code: 0
+
+- name: mkdir DENY
+  constable: |
+    all_domains mkdir restricted {
+      log_proc("denied-mkdir");
+      return DENY;
+    }
+  execution:
+    command: mkdir restricted/test
+    results:
+      constable: mkdir
+      dmesg: denied-mkdir
+      return_code: 1
+
+- name: rmdir ALLOW
+  constable: |
+    all_domains rmdir allowed {
+      log_proc("allowed-rmdir");
+      return ALLOW;
+    }
+  setup:
+    - mkdir allowed/rmdir_dir
+  execution:
+    command: rmdir allowed/rmdir_dir
+    results:
+      constable: rmdir
+      dmesg: allowed-rmdir
+      return_code: 0
+
+- name: rmdir DENY
+  constable: |
+    all_domains rmdir restricted {
+      log_proc("denied-rmdir");
+      return DENY;
+    }
+  setup:
+    - mkdir restricted/rmdir_dir
+  execution:
+    command: rmdir restricted/rmdir_dir
+    results:
+      constable: rmdir
+      dmesg: denied-rmdir
+      return_code: 1
+
+- name: create ALLOW
+  constable: |
+    all_domains create allowed {
+      log_proc("allowed-create");
+      return ALLOW;
+    }
+  execution:
+    command: touch allowed/touch
+    results:
+      constable: create
+      dmesg: allowed-create
+      return_code: 0
+
+- name: create DENY
+  constable: |
+    all_domains create restricted {
+      log_proc("denied-create");
+      return DENY;
+    }
+  execution:
+    command: touch restricted/touch
+    results:
+      constable: create
+      dmesg: denied-create
+      return_code: 1
+
+- name: permission ALLOW
+  constable: |
+    all_domains permission allowed {
+      log_proc("allowed-permission");
+      return ALLOW;
+    }
+  setup:
+    - mkdir allowed/permission_dir
+  execution:
+    command: chmod 777 allowed/permission_dir
+    results:
+      constable: permission
+      dmesg: allowed-permission
+      return_code: 0
+
+- name: permission DENY
+  constable: |
+    all_domains permission restricted {
+      log_proc("denied-permission");
+      return DENY;
+    }
+  setup:
+    - mkdir restricted/permission_dir
+  execution:
+    command: chmod 777 restricted/permission_dir
+    results:
+      constable: permission
+      dmesg: denied-permission
+      return_code: 1
+
+- name: mknod ALLOW
+  constable: |
+    all_domains mknod allowed {
+      log_proc("allowed-mknod");
+      return ALLOW;
+    }
+  execution:
+    command: mknod allowed/mknod c 1 3
+    results:
+      constable: mknod
+      dmesg: allowed-mknod
+      return_code: 0
+
+- name: mknod DENY
+  constable: |
+    all_domains mknod restricted {
+      log_proc("denied-mknod");
+      return DENY;
+    }
+  execution:
+    command: mknod restricted/mknod c 1 3
+    results:
+      constable: mknod
+      dmesg: denied-mknod
+      return_code: 1
+
+- name: symlink ALLOW
+  constable: |
+    all_domains symlink allowed {
+      log_proc("allowed-symlink");
+      return ALLOW;
+    }
+  setup:
+    - touch allowed/sym-allow
+  execution:
+    command: ln -s allowed/sym-allow allowed/symlink
+    results:
+      constable: symlink
+      dmesg: allowed-symlink
+      return_code: 0
+
+- name: symlink DENY
+  constable: |
+    all_domains symlink restricted {
+      log_proc("denied-symlink");
+      return DENY;
+    }
+  setup:
+    - touch allowed/sym-deny
+  execution:
+    command: ln -s allowed/sym-deny restricted/symlink
+    results:
+      constable: symlink
+      dmesg: denied-symlink
+      return_code: 1
+
+- name: readlink ALLOW
+  constable: |
+    all_domains readlink allowed {
+      log_proc("allowed-readlink");
+      return ALLOW;
+    }
+  setup:
+    - touch allowed/readlink-file
+    - ln -s allowed/readlink-file allowed/readlink-link
+  execution:
+    command: readlink allowed/readlink-link
+    results:
+      constable: readlink
+      dmesg: allowed-readlink
+      return_code: 0
+
+- name: readlink DENY
+  constable: |
+    all_domains readlink restricted {
+      log_proc("denied-readlink");
+      return DENY;
+    }
+  setup:
+    - touch restricted/readlink-file
+    - ln -s restricted/readlink-file restricted/readlink-link
+  execution:
+    command: readlink restricted/readlink-link
+    results:
+      constable: readlink
+      dmesg: denied-readlink
+      return_code: 1
+
+- name: rename ALLOW
+  constable: |
+    all_domains rename allowed {
+      log_proc("allowed-rename");
+      return ALLOW;
+    }
+  setup:
+    - touch allowed/rename
+  execution:
+    command: mv allowed/rename allowed/renamed
+    results:
+      constable: rename
+      dmesg: allowed-rename
+      return_code: 0
+
+- name: rename DENY
+  constable: |
+    all_domains rename restricted {
+      log_proc("denied-rename");
+      return DENY;
+    }
+  setup:
+    - touch restricted/rename
+  execution:
+    command: mv restricted/rename restricted/renamed
+    results:
+      constable: rename
+      dmesg: denied-rename
+      return_code: 1
+
+- name: unlink ALLOW
+  constable: |
+    all_domains unlink allowed {
+      log_proc("allowed-unlink");
+      return ALLOW;
+    }
+  setup:
+    - touch allowed/unlink-file
+    - ln -s allowed/unlink-file allowed/unlink
+  execution:
+    command: unlink allowed/unlink
+    results:
+      constable: unlink
+      dmesg: allowed-unlink
+      return_code: 0
+
+- name: unlink DENY
+  constable: |
+    all_domains unlink restricted {
+      log_proc("denied-unlink");
+      return DENY;
+    }
+  setup:
+    - touch restricted/unlink-file
+    - ln -s restricted/unlink-file restricted/unlink
+  execution:
+    command: unlink restricted/unlink
+    results:
+      constable: unlink
+      dmesg: denied-unlink
+      return_code: 1
+
+- name: truncate ALLOW
+  constable: |
+    all_domains truncate allowed {
+      log_proc("allowed-truncate");
+      return ALLOW;
+    }
+  setup:
+    - echo "Truncate test" > allowed/truncate
+  execution:
+    command: truncate -s 0 allowed/truncate
+    results:
+      constable: truncate
+      dmesg: allowed-truncate
+      return_code: 0
+
+- name: truncate DENY
+  constable: |
+    all_domains truncate restricted {
+      log_proc("denied-truncate");
+      return DENY;
+    }
+  setup:
+    - echo "Truncate test" > restricted/truncate
+  execution:
+    command: truncate -s 0 restricted/truncate
+    results:
+      constable: truncate
+      dmesg: denied-truncate
+      return_code: 1
+

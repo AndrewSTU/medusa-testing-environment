@@ -1,0 +1,29 @@
+{
+        "name": "Test2",
+        "setup": [
+            {
+                "command": ""
+            }
+        ],
+        "execution": {
+            "pre_execution": [
+                {
+                    "command": ""
+                }
+            ],
+            "command": "",
+            "results": {
+                "constable": "",
+                "dmesg": "",
+                "return_code": 0
+            },
+            "post_execution": [
+                {
+                    "command": ""
+                }
+            ]
+        },
+        "cleanup": [
+
+        ]
+    },
