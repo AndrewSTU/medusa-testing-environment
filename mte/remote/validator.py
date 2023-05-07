@@ -1,12 +1,19 @@
-from setup import env_root
+from setup import env_root, has_key
+from enum import Enum
+
 import os
+
+class Result(Enum):
+    FAILED = 0
+    PASSED = 1
+    IGNORED = 2
 
 class Validator:
 
     def __init__(self):
-        self.test_results = {"success": [], "failed": [], "partial":[]}
+        self.test_results = {"success": 0, "failed": 0, "partial": 0}
 
-    def validate_local_test(self, test, out_std, out_constable, out_dmesg):
+    def validate(self, test, out_std, out_constable, out_dmesg, using_constable):
         expect = test["execution"]["results"]
 
         result = {
@@ -18,36 +25,71 @@ class Validator:
 
         vc = 0
         # validate stdout
-        if expect["return_code"] == out_std.returncode:
-            result["output"] = True
-            vc += 1
+        if has_key(expect, "return_code"):
+            r = expect["return_code"] == out_std.returncode
+
+            result["output"] = Result(int(r))
+            vc += r
         else:
-            # TODO: log stderr
-            pass
+            result["output"] = Result.IGNORED
+            vc += 1
 
         # validate constable
-        if "constable" not in expect or expect["constable"] is None or expect["constable"] in out_constable:
-            result["constable"] = True
-            vc += 1
+        if has_key(expect, "constable") and using_constable:
+            r = expect["constable"] in str(out_constable)
+
+            result["constable"] = Result(int(r))
+            vc += r
         else:
-            # TODO: log constable
-            pass
+            result["constable"] = Result.IGNORED
+            vc += 1
 
         # validate dmesg
-        if expect["dmesg"] in str(out_dmesg):
-            result["dmesg"] = True
-            vc += 1
+        if has_key(expect, "dmesg"):
+            r = expect["dmesg"] in str(out_dmesg)
+
+            result["dmesg"] = Result(int(r))
+            vc += r
         else:
-            # TODO: log dmesg
-            pass
+            result["dmesg"] = Result.IGNORED
+            vc += 1
 
         # assign result group
         if vc == 0:
-            self.test_results["failed"].append(result)
+            self.test_results["failed"] += 1
         elif vc == 3:
-            self.test_results["success"].append(result)
+            self.test_results["success"] += 1
         else:
-            self.test_results["partial"].append(result)
+            self.test_results["partial"] += 1
+
+        self.__append_to_results(result)
+        self.__append_to_details(test["name"], out_std, out_constable, out_dmesg)
+
+    def failed(self, test, exception):
+        name = test["name"]
+        self.test_results["failed"] += 1
+
+        with open(os.path.join(env_root, "results"), "a") as f:
+            f.write(f"{name}:{' ' * (32 - len(name))}Failed with error see details.\n")
+
+        with open(os.path.join(env_root, "results_details"), "a") as f:
+            f.write(f"{name} {'-' * (32 - len(name))}\n")
+            f.write(f"\nerror:\n{str(exception)}\n")
+
+    def __append_to_details(self, name, out_std, out_constable, out_dmesg):
+        with open(os.path.join(env_root, "results_details"), "a") as f:
+            f.write(f"{name} {'-' * (32 - len(name))}")
+            f.write(f"\noutput:\n{out_std.stdout.decode('utf-8')+out_std.stderr.decode('utf-8')}")
+            f.write(f"\nconstable:\n{str(out_constable)}")
+            f.write(f"\ndmesg:\n{str(out_dmesg)}\n")
+    def __append_to_results(self, results):
+        name = results["name"]
+        output = results["output"].name
+        constable = results["constable"].name
+        dmesg = results["dmesg"].name
+
+        with open(os.path.join(env_root, "results"), "a") as f:
+            f.write(f"{name}:{' ' * (32 - len(name))}output: {output} \t constable: {constable} \t dmesg: {dmesg}\n")
 
     def prevalidate_dmesg(self, test, out_dmseg):
         expect = test["execution"]["results"]["dmesg"]
@@ -56,21 +98,16 @@ class Validator:
 
     def dump_results(self):
         # Count number of tests in each category
-        success_count = len(self.test_results["success"])
-        failed_count = len(self.test_results["failed"])
-        partial_count = len(self.test_results["partial"])
+        success_count = self.test_results["success"]
+        failed_count = self.test_results["failed"]
+        partial_count = self.test_results["partial"]
 
         # Write overall test results to file
-        with open(os.path.join(env_root, "results"), 'w') as f:
-            f.write(f"Testing complete: {success_count} passed, {failed_count} failed, {partial_count} partial\n")
-
-            # Write results for each test to file
-            for test in self.test_results["success"] + self.test_results["failed"] + self.test_results["partial"]:
-                name = test["name"]
-                output = "passed" if test["output"] else "failed"
-                constable = "passed" if test["constable"] else "failed"
-                dmesg = "passed" if test["dmesg"] else "failed"
-
-                f.write(f"{name}: \t output: {output} \t constable: {constable} \t dmesg: {dmesg}\n")
+        with open(os.path.join(env_root, "results"), 'r+') as f:
+            content = f.read()
+            f.seek(0,0)
+            f.write(
+                f"Testing complete: {success_count} passed, {failed_count} failed, {partial_count} partial\n{content}"
+            )
 
 

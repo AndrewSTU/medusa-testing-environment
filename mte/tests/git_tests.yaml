@@ -1,0 +1,16 @@
+- name: Semop performance
+  type: GIT
+  use_constable: true
+  constable: |
+    * ipc_semop * {
+      log_proc("SEMOP");
+      return ALLOW;
+    }
+  setup:
+    - make -C ipc/
+  execution:
+    command: python3 ipc/sem_performance_test_runner.py
+    results:
+      constable: ipc_
+      dmesg: SEMOP
+      return_code: 0

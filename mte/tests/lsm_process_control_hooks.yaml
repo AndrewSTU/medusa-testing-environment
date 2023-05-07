@@ -1,4 +1,5 @@
 - name: fork
+  type: LOCAL
   constable: |
     all_domains fork {
       log_proc("allowed-fork");
@@ -12,6 +13,7 @@
       return_code: 0
 
 - name: kill
+  type: LOCAL
   constable: |
     * kill * {
       log_proc("kill");

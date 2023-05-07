@@ -1,4 +1,7 @@
 mte.egg-info
 .idea
-mte/tests/medusa-tests
 venv
+dist
+sdk
+mte-3.0
+log

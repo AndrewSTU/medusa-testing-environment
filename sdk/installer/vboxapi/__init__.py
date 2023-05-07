@@ -62,7 +62,7 @@ if VBoxBinDir is None:
     if platform.system() == 'Darwin':
         VBoxBinDir = '/Applications/VirtualBox.app/Contents/MacOS'
     else: # Will be set by the installer
-        VBoxBinDir = "%VBOX_INSTALL_PATH%"
+        VBoxBinDir = "C:\\Program Files\\Oracle\\VirtualBox\\"
 else:
     VBoxBinDir = os.path.abspath(VBoxBinDir)
 
@@ -70,7 +70,7 @@ if VBoxSdkDir is None:
     if platform.system() == 'Darwin':
         VBoxSdkDir = '/Applications/VirtualBox.app/Contents/MacOS/sdk'
     else: # Will be set by the installer
-        VBoxSdkDir = "%VBOX_SDK_PATH%"
+        VBoxSdkDir = "C:\Program Files\Oracle\VirtualBox\sdk"
 else:
     VBoxSdkDir = os.path.abspath(VBoxSdkDir)
 

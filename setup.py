@@ -1,35 +1,10 @@
 from setuptools import setup
 from setuptools.command.install import install
 
-import platform
-import os
-import subprocess
-
-
-def install_sdk():
-    if platform.system() == "Windows":
-        vbox_dest = os.environ.get("VBOX_INSTALL_PATH", None)
-        if vbox_dest is None:
-            print("Missing 'VBOX_INSTALL_PATH' in evn path variable. Please edit env variable.")
-
-        setup_path = os.path.dirname(__file__)
-        current_path = os.getcwd()
-
-        try:
-            os.chdir(os.path.join(setup_path, 'sdk', 'installer'))
-            result = subprocess.run(['py', 'vboxapisetup.py', 'install'])
-            os.chdir(current_path)
-
-            if result.returncode != 0:
-                raise RuntimeError(result.stderr)
-        except RuntimeError as e:
-            print(f"Virtual Box SK installation failed. Please run it manually(sdk/installer/vboxapisetup.py):\n{e}")
-
 
 class MyInstall(install):
     def run(self):
         install.run(self)
-        install_sdk()
         try:
             from mte.main import main
             main()

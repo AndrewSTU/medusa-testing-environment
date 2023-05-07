@@ -36,8 +36,7 @@ def main():
     logger.set_stdout(app)
 
     # Load app
-    app.load()
-
-
-if __name__ == "__main__":
-    main()
+    try:
+        app.load()
+    except:
+        quit()

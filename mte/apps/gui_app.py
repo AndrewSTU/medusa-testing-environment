@@ -2,7 +2,6 @@ from mte.apps.app import App
 from mte.executor import TestExecutor
 import tkinter as tk
 
-
 class GuiApp(App):
     def __init__(self):
         super().__init__()
@@ -25,7 +24,7 @@ class GuiApp(App):
         self.reload_button.pack(side="left", padx=5, pady=5)
 
         # create a start button
-        self.start_button = tk.Button(self.buttons_frame, text="Start", command=self.execute)
+        self.start_button = tk.Button(self.buttons_frame, text="Start", command=self.start)
         self.start_button.pack(side="right", padx=5, pady=5)
 
         # create a reload button
@@ -109,12 +108,26 @@ class GuiApp(App):
         self.log_text.configure(state="disabled")
         self.root.update_idletasks()
 
+    def start(self):
+        self.executor.connect()
+        self.root.after(100, self.check_connection)
+
     def execute(self):
-        results = self.executor.execute(
+        started = self.executor.execute(
             [t for t in self.all_tests if t["selected"].get() is True]
         )
+        if started:
+            self.root.after(1000, self.check_execution)
 
-        self.show_results(results)
+    def check_connection(self):
+        if not self.executor.check_connection_status():
+            self.root.after(100, self.check_connection)
+        else:
+            self.execute()
+
+    def check_execution(self):
+        if not self.executor.check_execution_status():
+            self.root.after(1000, self.check_execution)
 
     def reload(self):
         self.__update_test_list(self.executor.get_tests())

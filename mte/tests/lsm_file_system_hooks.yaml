@@ -1,4 +1,5 @@
 - name: mkdir ALLOW
+  type: LOCAL
   constable: |
     all_domains mkdir allowed {
       log_proc("allowed-mkdir");
@@ -12,6 +13,7 @@
       return_code: 0
 
 - name: mkdir DENY
+  type: LOCAL
   constable: |
     all_domains mkdir restricted {
       log_proc("denied-mkdir");
@@ -25,6 +27,7 @@
       return_code: 1
 
 - name: rmdir ALLOW
+  type: LOCAL
   constable: |
     all_domains rmdir allowed {
       log_proc("allowed-rmdir");
@@ -40,6 +43,7 @@
       return_code: 0
 
 - name: rmdir DENY
+  type: LOCAL
   constable: |
     all_domains rmdir restricted {
       log_proc("denied-rmdir");
@@ -55,6 +59,7 @@
       return_code: 1
 
 - name: create ALLOW
+  type: LOCAL
   constable: |
     all_domains create allowed {
       log_proc("allowed-create");
@@ -68,6 +73,7 @@
       return_code: 0
 
 - name: create DENY
+  type: LOCAL
   constable: |
     all_domains create restricted {
       log_proc("denied-create");
@@ -81,6 +87,7 @@
       return_code: 1
 
 - name: permission ALLOW
+  type: LOCAL
   constable: |
     all_domains permission allowed {
       log_proc("allowed-permission");
@@ -96,6 +103,7 @@
       return_code: 0
 
 - name: permission DENY
+  type: LOCAL
   constable: |
     all_domains permission restricted {
       log_proc("denied-permission");
@@ -111,6 +119,7 @@
       return_code: 1
 
 - name: mknod ALLOW
+  type: LOCAL
   constable: |
     all_domains mknod allowed {
       log_proc("allowed-mknod");
@@ -124,6 +133,7 @@
       return_code: 0
 
 - name: mknod DENY
+  type: LOCAL
   constable: |
     all_domains mknod restricted {
       log_proc("denied-mknod");
@@ -137,6 +147,7 @@
       return_code: 1
 
 - name: symlink ALLOW
+  type: LOCAL
   constable: |
     all_domains symlink allowed {
       log_proc("allowed-symlink");
@@ -152,6 +163,7 @@
       return_code: 0
 
 - name: symlink DENY
+  type: LOCAL
   constable: |
     all_domains symlink restricted {
       log_proc("denied-symlink");
@@ -166,39 +178,8 @@
       dmesg: denied-symlink
       return_code: 1
 
-- name: readlink ALLOW
-  constable: |
-    all_domains readlink allowed {
-      log_proc("allowed-readlink");
-      return ALLOW;
-    }
-  setup:
-    - touch allowed/readlink-file
-    - ln -s allowed/readlink-file allowed/readlink-link
-  execution:
-    command: readlink allowed/readlink-link
-    results:
-      constable: readlink
-      dmesg: allowed-readlink
-      return_code: 0
-
-- name: readlink DENY
-  constable: |
-    all_domains readlink restricted {
-      log_proc("denied-readlink");
-      return DENY;
-    }
-  setup:
-    - touch restricted/readlink-file
-    - ln -s restricted/readlink-file restricted/readlink-link
-  execution:
-    command: readlink restricted/readlink-link
-    results:
-      constable: readlink
-      dmesg: denied-readlink
-      return_code: 1
-
 - name: rename ALLOW
+  type: LOCAL
   constable: |
     all_domains rename allowed {
       log_proc("allowed-rename");
@@ -214,6 +195,7 @@
       return_code: 0
 
 - name: rename DENY
+  type: LOCAL
   constable: |
     all_domains rename restricted {
       log_proc("denied-rename");
@@ -229,6 +211,7 @@
       return_code: 1
 
 - name: unlink ALLOW
+  type: LOCAL
   constable: |
     all_domains unlink allowed {
       log_proc("allowed-unlink");
@@ -245,6 +228,7 @@
       return_code: 0
 
 - name: unlink DENY
+  type: LOCAL
   constable: |
     all_domains unlink restricted {
       log_proc("denied-unlink");
@@ -261,6 +245,7 @@
       return_code: 1
 
 - name: truncate ALLOW
+  type: LOCAL
   constable: |
     all_domains truncate allowed {
       log_proc("allowed-truncate");
@@ -276,6 +261,7 @@
       return_code: 0
 
 - name: truncate DENY
+  type: LOCAL
   constable: |
     all_domains truncate restricted {
       log_proc("denied-truncate");

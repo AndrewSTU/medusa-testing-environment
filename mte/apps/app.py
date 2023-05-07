@@ -1,4 +1,4 @@
-from mte.configuration_manager import ConfigurationManager
+from mte.config_manager import ConfigurationManager
 from mte.logger import Logger
 from abc import ABC, abstractmethod
 

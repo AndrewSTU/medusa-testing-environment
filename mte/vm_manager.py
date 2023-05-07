@@ -44,12 +44,17 @@ class VirtualBoxManager:
                 self.__start_vm()
 
             # Wait until ssh port is available
-            self.logger.debug("Validating SSH connection...")
-            while True:
+            tries_count = 0
+            while True <= 3:
+                tries_count += 1
+                self.logger.debug("Validating SSH connection...")
                 if self.__check_ssh():
                     break
-                time.sleep(10)
-                # TODO: Runtime error if takes too long?
+
+                time.sleep(5)
+                if tries_count >= 3:
+                    raise ConnectionError("SSH connection timeout.")
+
             self.logger.info("Guest is ready.")
         except Exception as e:
             self.logger.error(e, "Failed to connect to guest.")
@@ -115,7 +120,7 @@ class VirtualBoxManager:
             # Establish SSH connection with the virtual machine
             ssh = paramiko.SSHClient()
             ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy)
-            ssh.connect(hostname=self.host, port=self.port, username=self.username, password=self.password)
+            ssh.connect(hostname=self.host, port=self.port, username=self.username, password=self.password, timeout=5)
 
             # Execute "ls" command to check if the connection was successful
             stdin, stdout, stderr = ssh.exec_command("ls")

@@ -1,0 +1,26 @@
+name: Test 1
+type: LOCAL
+using_constable: true/false
+constable: |
+  space event space {
+    return ALLOW;
+  }
+setup:
+  - shell command 1
+  - shell command 2
+execution:
+  pre-execution:
+    - shell command 1
+    - shell command 2
+  execution:
+    command: shell execution command
+    results:
+      constable: event
+      dmesg: log content
+      return_code: 0
+  post-execution:
+    - shell command 1
+    - shell command 2
+cleanup:
+  - shell command 1
+  - shell command 2

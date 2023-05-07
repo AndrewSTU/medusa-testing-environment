@@ -1,3 +1,4 @@
+import os
 import queue
 import threading
 import pexpect
@@ -15,7 +16,7 @@ class Reader:
         self.process = None
         self.queue = queue.Queue()
         self.process = pexpect.spawnu(cmd)
-        self.thread = threading.Thread(name=cmd, target=self.__start)
+        self.thread = threading.Thread(target=self.__start)
         self.thread.start()
 
     def __start(self):
@@ -23,7 +24,8 @@ class Reader:
         Function to be started in a separate thread for reading output of the command in real-time
         """
         for line in iter(self.process.readline, ''):
-            self.queue.put(line)
+            if line != b'':
+                self.queue.put(line)
 
     def read(self):
         """
