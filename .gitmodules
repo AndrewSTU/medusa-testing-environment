@@ -1,0 +1,3 @@
+[submodule "mte/tests/medusa-tests"]
+	path = mte/tests/medusa-tests
+	url = https://github.com/AndrewSTU/medusa-tests
