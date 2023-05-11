@@ -48,15 +48,13 @@ __version__ = "$Revision: 155244 $"
 
 import gc
 import os
-import sys
-import traceback
-import shlex
-import time
-import re
 import platform
+import re
+import shlex
+import sys
+import time
+import traceback
 from optparse import OptionParser
-from pprint import pprint
-
 
 #
 # Global Variables
@@ -727,7 +725,7 @@ def cmdExistingVm(ctx, mach, cmd, args):
         return
     # this could be an example how to handle local only (i.e. unavailable
     # in Webservices) functionality
-    if ctx['remote'] and cmd == 'some_local_only_command':
+    if ctx['target'] and cmd == 'some_local_only_command':
         print('Trying to use local only functionality, ignored')
         session.unlockMachine()
         return
@@ -1051,7 +1049,7 @@ def infoCmd(ctx, args):
         print()
         print(colCat(ctx, "  Media:"))
     for a in attaches:
-        print("   Controller: '%s' port/device: %d:%d type: %s (%s):" % (a.controller, a.port, a.device, asEnumElem(ctx, "DeviceType", a.type), a.type))
+        print("   Controller: '%s' port/device: %d:%d type: %s (%s):" % (a.controller, a.__port, a.device, asEnumElem(ctx, "DeviceType", a.type), a.type))
         medium = a.medium
         if a.type == ctx['global'].constants.DeviceType_HardDisk:
             print("   HDD:")
@@ -1554,7 +1552,7 @@ def hostCmd(ctx, args):
     #print("Global shared folders:")
     #for ud in ctx['global'].getArray(vbox, 'sharedFolders'):
     #    printSf(ctx, sf)
-    host = vbox.host
+    host = vbox.__host
     cnt = host.processorCount
     print(colCat(ctx, "Processors:"))
     print("  available/online: %d/%d " % (cnt, host.processorOnlineCount))
@@ -1897,7 +1895,7 @@ def connectCmd(ctx, args):
         passwd = ""
 
     ctx['wsinfo'] = [url, user, passwd]
-    ctx['vb'] = ctx['global'].platform.connect(url, user, passwd)
+    ctx['vb'] = ctx['global'].platform.establish_connection(url, user, passwd)
     try:
         print("Running VirtualBox version %s" % (ctx['vb'].version))
     except Exception as e:
@@ -1936,7 +1934,7 @@ def reconnectCmd(ctx, args):
         pass
 
     [url, user, passwd] = ctx['wsinfo']
-    ctx['vb'] = ctx['global'].platform.connect(url, user, passwd)
+    ctx['vb'] = ctx['global'].platform.establish_connection(url, user, passwd)
     try:
         print("Running VirtualBox version %s" % (ctx['vb'].version))
     except Exception as e:
@@ -2207,7 +2205,7 @@ def listUsbCmd(ctx, args):
         print("usage: listUsb")
         return 0
 
-    host = ctx['vb'].host
+    host = ctx['vb'].__host
     for ud in ctx['global'].getArray(host, 'USBDevices'):
         printHostUsbDev(ctx, ud)
 
@@ -2217,7 +2215,7 @@ def findDevOfType(ctx, mach, devtype):
     atts = ctx['global'].getArray(mach, 'mediumAttachments')
     for a in atts:
         if a.type == devtype:
-            return [a.controller, a.port, a.device]
+            return [a.controller, a.__port, a.device]
     return [None, 0, 0]
 
 def createHddCmd(ctx, args):
@@ -2292,7 +2290,7 @@ def detachVmDevice(ctx, mach, args):
     for a in atts:
         if a.medium:
             if hid == "ALL" or a.medium.id == hid:
-                mach.detachDevice(a.controller, a.port, a.device)
+                mach.detachDevice(a.controller, a.__port, a.device)
 
 def detachMedium(ctx, mid, medium):
     cmdClosedVm(ctx, machById(ctx, mid), detachVmDevice, [medium])
@@ -3363,9 +3361,9 @@ def runCommandArgs(ctx, args):
     if ci == None:
         print("Unknown command: '%s', type 'help' for list of known commands" % (c))
         return 0
-    if ctx['remote'] and ctx['vb'] is None:
+    if ctx['target'] and ctx['vb'] is None:
         if c not in ['connect', 'reconnect', 'help', 'quit']:
-            print("First connect to remote server with %s command." % (colored('connect', 'blue')))
+            print("First connect to target server with %s command." % (colored('connect', 'blue')))
             return 0
     return ci[1](ctx, args)
 
@@ -3423,7 +3421,7 @@ def checkUserExtensions(ctx, cmds, folder):
             addExtsFromFile(ctx, cmds, os.path.join(shextdir, e))
 
 def getHomeFolder(ctx):
-    if ctx['remote'] or ctx['vb'] is None:
+    if ctx['target'] or ctx['vb'] is None:
         if 'VBOX_USER_HOME' in os.environ:
             return os.path.join(os.environ['VBOX_USER_HOME'])
         return os.path.join(os.path.expanduser("~"), ".VirtualBox")
@@ -3431,10 +3429,10 @@ def getHomeFolder(ctx):
         return ctx['vb'].homeFolder
 
 def interpret(ctx):
-    if ctx['remote']:
-        commands['connect'] = ["Connect to remote VBox instance: connect http://server:18083 user password", connectCmd, 0]
-        commands['disconnect'] = ["Disconnect from remote VBox instance", disconnectCmd, 0]
-        commands['reconnect'] = ["Reconnect to remote VBox instance", reconnectCmd, 0]
+    if ctx['target']:
+        commands['connect'] = ["Connect to target VBox instance: connect http://server:18083 user password", connectCmd, 0]
+        commands['disconnect'] = ["Disconnect from target VBox instance", disconnectCmd, 0]
+        commands['reconnect'] = ["Reconnect to target VBox instance", reconnectCmd, 0]
         ctx['wsinfo'] = ["http://localhost:18083", "", ""]
 
     vbox = ctx['vb']
@@ -3604,7 +3602,7 @@ def main(argv):
         'global':       oVBoxMgr,
         'vb':           oVBoxMgr.getVirtualBox(),
         'const':        oVBoxMgr.constants,
-        'remote':       oVBoxMgr.remote,
+        'target':       oVBoxMgr.remote,
         'type':         oVBoxMgr.type,
         'run':          lambda cmd, args: runCommandCb(ctx, cmd, args),
         'guestlambda':  lambda uuid, guestLambda, args: runGuestCommandCb(ctx, uuid, guestLambda, args),

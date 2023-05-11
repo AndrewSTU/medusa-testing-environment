@@ -236,7 +236,7 @@ class PlatformBase(object):
 
     def isRemote(self):
         """
-        Returns True if remote (web services) and False if local (COM/XPCOM).
+        Returns True if target (web services) and False if local (COM/XPCOM).
         """
         return False
 
@@ -434,12 +434,9 @@ class PlatformMSCOM(PlatformBase):
         # Since the code runs on all platforms, we have to do a lot of
         # importing here instead of at the top of the file where it's normally located.
         #
-        from win32com import universal
         from win32com.client import gencache, DispatchBaseClass
-        from win32com.client import constants, getevents
         import win32com
         import pythoncom
-        import win32api
         import winerror
         from win32con import DUPLICATE_SAME_ACCESS
         from win32api import GetCurrentThread, GetCurrentThreadId, DuplicateHandle, GetCurrentProcess
@@ -614,9 +611,8 @@ class PlatformMSCOM(PlatformBase):
     def waitForEvents(self, timeout):
         from win32api import GetCurrentThreadId
         from win32event import INFINITE
-        from win32event import MsgWaitForMultipleObjects, QS_ALLINPUT, WAIT_TIMEOUT, WAIT_OBJECT_0
+        from win32event import MsgWaitForMultipleObjects, QS_ALLINPUT, WAIT_OBJECT_0
         from pythoncom import PumpWaitingMessages
-        import types
 
         if not isinstance(timeout, int):
             raise TypeError("The timeout argument is not an integer")
@@ -757,9 +753,6 @@ class PlatformXPCOM(PlatformBase):
     def __init__(self, dParams):
         PlatformBase.__init__(self, dParams)
         sys.path.append(VBoxSdkDir + '/bindings/xpcom/python/')
-        import xpcom.vboxxpcom
-        import xpcom
-        import xpcom.components
         _ = dParams
 
     def getSessionObject(self):
@@ -870,8 +863,6 @@ class PlatformWEBSERVICE(PlatformBase):
         sWebServLib = os.path.join(VBoxSdkDir, 'bindings', 'webservice', 'python', 'lib')
         if sWebServLib not in sys.path:
             sys.path.append(sWebServLib)
-        import VirtualBox_wrappers
-        from VirtualBox_wrappers import IWebsessionManager2
 
         # Initialize instance variables from parameters.
         if dParams is not None:
@@ -899,7 +890,7 @@ class PlatformWEBSERVICE(PlatformBase):
         return 'WEBSERVICE'
 
     def isRemote(self):
-        """ Returns True if remote VBox host, False if local. """
+        """ Returns True if target VBox host, False if local. """
         return True
 
     def getArray(self, oInterface, sAttrib):

@@ -1,19 +1,43 @@
-from setup import env_root, has_key
+import os
 from enum import Enum
 
-import os
+from setup import results_dir, result_details_dir, has_key
+
 
 class Result(Enum):
+    """
+    Enum used for easier test's results gradings.
+    """
     FAILED = 0
     PASSED = 1
     IGNORED = 2
 
 class Validator:
+    """
+    Handles validations of test results.
+    """
 
     def __init__(self):
+        """
+        Initializes dictionary with overal results.
+        """
         self.test_results = {"success": 0, "failed": 0, "partial": 0}
 
-    def validate(self, test, out_std, out_constable, out_dmesg, using_constable):
+    def validate(self, test, out_std, out_constable, out_dmesg):
+        """
+        Main validation function.
+        Verifies outputs with test's expected values.
+        Verifies:
+        - result code
+        - Constable output
+        - system log output
+
+        @param test: test to validate .
+        @param out_std: std output from command.
+        @param out_constable: Constable output
+        @param out_dmesg: system log output.
+        """
+        # Extract expected results
         expect = test["execution"]["results"]
 
         result = {
@@ -24,7 +48,7 @@ class Validator:
         }
 
         vc = 0
-        # validate stdout
+        # Validate stdout
         if has_key(expect, "return_code"):
             r = expect["return_code"] == out_std.returncode
 
@@ -34,7 +58,11 @@ class Validator:
             result["output"] = Result.IGNORED
             vc += 1
 
-        # validate constable
+        # Validate constable
+        using_constable = True
+        if has_key(test, "using_constable"):
+            using_constable = test["using_constable"]
+
         if has_key(expect, "constable") and using_constable:
             r = expect["constable"] in str(out_constable)
 
@@ -44,7 +72,7 @@ class Validator:
             result["constable"] = Result.IGNORED
             vc += 1
 
-        # validate dmesg
+        # Validate dmesg
         if has_key(expect, "dmesg"):
             r = expect["dmesg"] in str(out_dmesg)
 
@@ -54,7 +82,7 @@ class Validator:
             result["dmesg"] = Result.IGNORED
             vc += 1
 
-        # assign result group
+        # Assign result group
         if vc == 0:
             self.test_results["failed"] += 1
         elif vc == 3:
@@ -62,48 +90,69 @@ class Validator:
         else:
             self.test_results["partial"] += 1
 
+        # Append to global results
         self.__append_to_results(result)
+
+        # Create details result file
         self.__append_to_details(test["name"], out_std, out_constable, out_dmesg)
 
     def failed(self, test, exception):
+        """
+        In case exception occurred during test execution, records error to results files.
+
+        @param test: test during exception.
+        @param exception: exception that occurred.
+        """
         name = test["name"]
         self.test_results["failed"] += 1
 
-        with open(os.path.join(env_root, "results"), "a") as f:
+        # Record failure to overal results
+        with open(os.path.join(results_dir, "results"), "a") as f:
             f.write(f"{name}:{' ' * (32 - len(name))}Failed with error see details.\n")
 
-        with open(os.path.join(env_root, "results_details"), "a") as f:
+        # Record failure to details result
+        with open(os.path.join(results_dir, "details", test["name"]), "w") as f:
             f.write(f"{name} {'-' * (32 - len(name))}\n")
             f.write(f"\nerror:\n{str(exception)}\n")
 
     def __append_to_details(self, name, out_std, out_constable, out_dmesg):
-        with open(os.path.join(env_root, "results_details"), "a") as f:
+        """
+        Records outputs to test's result details report.
+
+        @param name: test name.
+        @param out_std: std output.
+        @param out_constable: Constable output
+        @param out_dmesg: sys log output.
+        """
+        with open(os.path.join(result_details_dir, name), "w") as f:
             f.write(f"{name} {'-' * (32 - len(name))}")
             f.write(f"\noutput:\n{out_std.stdout.decode('utf-8')+out_std.stderr.decode('utf-8')}")
             f.write(f"\nconstable:\n{str(out_constable)}")
             f.write(f"\ndmesg:\n{str(out_dmesg)}\n")
     def __append_to_results(self, results):
+        """
+        Appends results to overal results report.
+        @param results:
+        """
         name = results["name"]
         output = results["output"].name
         constable = results["constable"].name
         dmesg = results["dmesg"].name
 
-        with open(os.path.join(env_root, "results"), "a") as f:
+        with open(os.path.join(results_dir, "results"), "a") as f:
             f.write(f"{name}:{' ' * (32 - len(name))}output: {output} \t constable: {constable} \t dmesg: {dmesg}\n")
 
-    def prevalidate_dmesg(self, test, out_dmseg):
-        expect = test["execution"]["results"]["dmesg"]
-
-        return expect in out_dmseg
-
     def dump_results(self):
+        """
+        Final function to append overal tests score to overal results file.
+        """
         # Count number of tests in each category
         success_count = self.test_results["success"]
         failed_count = self.test_results["failed"]
         partial_count = self.test_results["partial"]
 
         # Write overall test results to file
-        with open(os.path.join(env_root, "results"), 'r+') as f:
+        with open(os.path.join(results_dir, "results"), 'r+') as f:
             content = f.read()
             f.seek(0,0)
             f.write(

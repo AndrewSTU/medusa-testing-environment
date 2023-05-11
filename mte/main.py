@@ -1,8 +1,14 @@
+"""
+Main execution module for Medusa Testing Environment.
+
+Parses arguments, chooses application and starts execution.
+"""
+
 import argparse
 
-from mte.logger import Logger
-from mte.apps.shell_app import ShellApp
 from mte.apps.gui_app import GuiApp
+from mte.apps.shell_app import ShellApp
+from mte.logger import Logger
 
 
 def main():

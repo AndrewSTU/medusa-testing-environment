@@ -1,16 +1,8 @@
 from setuptools import setup
-from setuptools.command.install import install
 
 
-class MyInstall(install):
-    def run(self):
-        install.run(self)
-        try:
-            from mte.main import main
-            main()
-        except ImportError:
-            pass
-
+with open('mte/requirements.txt') as f:
+    requirements = f.read().splitlines()
 
 setup(
     name="mte",
@@ -19,10 +11,9 @@ setup(
     author='Roderik Ploszek',
     author_email='roderik.ploszek@gmail.com',
     license='MIT',
-    packages = ['mte'],
+    packages = ['mte', 'mte.tests', 'mte.target'],
     python_requires='>=3.11.2',
-    install_requires=['paramiko==3.1.0', 'virtualbox==2.1.1', 'GitPython==3.1.31', 'PyYAML==5.4.1'],
+    install_requires=requirements,
     zip_safe=True,
-    include_package_data=True,
-    cmdclass={'install': MyInstall}
+    include_package_data=True
 )

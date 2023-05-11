@@ -29,6 +29,7 @@ class Logger:
         # Set up logging
         logging.basicConfig(
             filename="log",
+            filemode="w",
             level=logging.DEBUG,
             format="%(asctime)s [%(levelname)s]: %(message)s"
         )

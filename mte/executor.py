@@ -1,154 +1,223 @@
-import queue
+import threading as th
 import time
 
-from mte.logger import Logger
-from mte.vm_manager import VirtualBoxManager
-from mte.test_manager import TestManager
 from mte.config_manager import ConfigurationManager
+from mte.logger import Logger
+from mte.remote_manager import RemoteManager
 from mte.ssh_manager import SSHManager
-
-import threading as th
+from mte.test_manager import TestManager
 
 
 class TestExecutor:
-    logger = Logger()
+    """
+    Main execution node. Represents interface for execution process for application.
+    """
+    __logger = Logger()
 
-    connection_thread = None
-    execution_thread = None
-    check_thread = None
-    check_queue = None
+    __connection_thread = None
+    __execution_thread = None
 
-    connection = False
+    __connection_active = False
 
-    def __init__(self, parent):
-        self.__parent = parent
+    def __init__(self):
+        """
+        Initializes TestExecutor.
+        Reads config using ConfigManger and create RemoteManager, SSHManager and VMManager.
+        """
+        self.__logger.info("Loading configuration...")
 
-        self.logger.info("Loading configuration...")
         # Load configuration
         config = ConfigurationManager().get_config()
-        self.client_config = config['target']
-        self.environment_config = config['env']
-        self.logger.info("Configuration loaded.")
+        self.__client_config = config['target']
+        self.__environment_config = config['env']
+        self.__logger.info("Configuration loaded.")
 
-        self.logger.info("Running setup...")
-        # VB manager
-        self.vb_manager = VirtualBoxManager(
-            vm_name=self.client_config['name'],
-            host=self.client_config['ip'],
-            port=self.client_config['port'],
-            username=self.client_config['username'],
-            password=self.client_config['password'],
-            using_vb=self.client_config.getboolean("using_vb")
+        self.__logger.info("Running setup...")
+        # Create remote manager
+        self.__remote_manager = RemoteManager(
+            vm_name=self.__client_config['name'],
+            host=self.__client_config['ip'],
+            port=self.__client_config['port'],
+            username=self.__client_config['username'],
+            password=self.__client_config['password'],
+            using_vb=self.__client_config.getboolean("using_vb")
         )
 
         # Create test manager
-        self.test_manager = TestManager()
+        self.__test_manager = TestManager()
 
         # Create SSH manager
-        self.ssh_manager = SSHManager(
-            self.client_config["ip"],
-            self.client_config["port"],
-            self.client_config["username"],
-            self.client_config["password"]
+        self.__ssh_manager = SSHManager(
+            self.__client_config["ip"],
+            self.__client_config["port"],
+            self.__client_config["username"],
+            self.__client_config["password"]
         )
 
-        self.logger.info("Setup complete.")
+        self.__logger.info("Setup complete.")
 
     def get_tests(self):
-        self.logger.info("Loading tests...")
-        tests = self.test_manager.list_tests()
-        self.logger.info("Tests have been loaded.")
+        """
+        Loads test using TestManager.
+
+        @return: all available tests.
+        """
+        self.__logger.info("Loading tests...")
+        tests = self.__test_manager.list_tests()
+        self.__logger.info("Tests have been loaded.")
 
         return tests
 
     def check_execution_status(self):
-        # Check queue for freeze
-        if not self.check_queue.empty():
-            self.logger.info("Host has frozen. Canceling testing.")
-            self.execution_thread = None
-            return True
+        """
+        Returns information if execution thread is still running.
 
-        # Check if execution finished
-        if not self.execution_thread.is_alive():
-            self.logger.debug("Execution thread finished.")
-
-            self.logger.debug("Stopping checking thread...")
-            self.check_queue.put(True)
-            return True
-
-        return False
+        @return: if execution thread is done.
+        """
+        return not self.__execution_thread.is_alive()
 
     def check_connection_status(self):
-        return not self.connection_thread.is_alive()
+        """
+        Returns information if connection thread is still running.
 
-    def connect(self):
-        self.connection_thread = th.Thread(target=self.__connection_thread)
-        self.connection_thread.start()
+        @return: if connection is done.
+        """
+        return not self.__connection_thread.is_alive()
+
+    def get_results(self):
+        """
+        Returns tests results from transferred results.
+
+        @return: test resutls.
+        """
+        results = self.__test_manager.load_results()
+
+        if results:
+            self.__logger.info("Result details are present in 'results' folder.")
+        return results
+    def establish_connection(self):
+        """
+        Starts connection thread.
+        """
+        self.__connection_thread = th.Thread(target=self.__connection_thread_target)
+        self.__connection_thread.start()
 
     def execute(self, selected_tests):
-        if not self.connection:
+        """
+        If connection is established, starts execution thread.
+
+        @param selected_tests: tests to run.
+        @return: if execution thread started.
+        """
+        if not self.__connection_active:
             return False
 
-        self.execution_thread = th.Thread(target=self.__execute_thread, args=(selected_tests,))
-        self.execution_thread.start()
-
-        self.check_queue = queue.Queue()
-        self.check_thread = th.Thread(target=self.__checking_thread)
-        self.check_thread.start()
+        self.__execution_thread = th.Thread(target=self.__execution_thread_target, args=(selected_tests,))
+        self.__execution_thread.start()
 
         return True
 
-    def __connection_thread(self):
-        self.logger.info("Establishing connection to remote...")
-        self.vb_manager.connect()
+    def __connection_thread_target(self):
+        """
+        Target function for connection thread.
+        1. Checks connection with target.
+        2. Creates ssh connection.
+        """
+        try:
+            self.__logger.info("Establishing connection to target...")
+            self.__remote_manager.connect()
 
-        self.ssh_manager.connect()
-        self.logger.info("Connection to remote was established.")
+            self.__ssh_manager.connect()
+            self.__logger.info("Connection to target was established.")
 
-        self.connection = True
-    def __checking_thread(self):
-        self.logger.debug("Started checking thread.")
+            # Set flag to signalize that connection is ready.
+            self.__connection_active = True
+        except:
+            quit(1)
+
+    def __check_execution_status(self):
+        """
+        Helper function for execution.
+        Runs pgrep for executor in while with 5s pauses.
+        Call has timeout set for 10s, if it fails, it means that host is iresponsive -> frozen.
+        If pgrep returns 1 -> executor has finished, then checks exit file on remote for execution result status.
+        """
+        env_dir = self.__environment_config["environmentDir"]
 
         while True:
-            if not self.check_queue.empty():
-                break
-            self.logger.debug("Validating guest connection...")
+
+            self.__logger.info("Validating remote...")
 
             try:
-                self.ssh_manager.exec("ls")
-            except AttributeError:
-                break
-            except Exception as e:
-                self.logger.error(e, "SSH failed. Host is frozen.")
-                self.check_queue.put(True)
-                break
+                self.__ssh_manager.exec("pgrep medusaTestsExec", timeout=True, log_error=True)
+
+            except TimeoutError as e:
+                # Took to long -> VM is frozen
+                self.__logger.error(e, "Remote is not responding, remote is most likely frozen.")
+            except IOError:
+                # Executor has finished
+                try:
+                    # Check execution result
+                    result = self.__ssh_manager.exec(f"cat {env_dir}/exit")
+                    if result != "SUCCESS":
+                        raise IOError("Error in test execution.")
+                    else:
+                        break
+                except IOError as e:
+                    # Error in execution, try to download log
+                    self.__ssh_manager.download_results(env_dir, True)
+                    self.__logger.error(e, "Execution on remote resulted in error")
+
             time.sleep(5)
 
-        self.logger.debug("Checking thread has stopped.")
+    def __execution_thread_target(self, selected_tests):
+        """
+        Execution thread target. Starts testing process:
+        1. Prepares test and files for transfer.
+        2. Prepares environment on remote.
+        3. Runs test execution in background.
+        4. Waits for execution process to stop.
 
-    def __execute_thread(self, selected_tests):
-        self.logger.info("Preparing selected tests for transfer...")
-        self.test_manager.prepare_tests(selected_tests, self.environment_config["environmentDir"])
-        self.logger.info("Tests are ready for transfer.")
+        @param selected_tests: tests to prepare and run.
+        """
+        env_dir = self.__environment_config["environmentDir"]
 
-        self.logger.info("Preparing environment on remote...")
-        include_git = any(t.get("type") for t in selected_tests)
-        self.ssh_manager.prepare_environment(self.environment_config["environmentDir"], include_git)
-        self.logger.info("Remote setup is done.")
+        # Prepare tests
+        self.__logger.info("Preparing selected tests for transfer...")
+        self.__test_manager.prepare_tests(selected_tests, env_dir)
+        self.__logger.info("Tests are ready for transfer.")
 
-        self.logger.info("Started testing...")
+        # Prepare env
+        self.__logger.info("Preparing environment on target...")
+        include_git = any(t.get("type") == 'GIT' for t in selected_tests)
+        self.__ssh_manager.prepare_environment(env_dir, include_git)
+        self.__ssh_manager.exec(f"sudo chmod -R 777 {env_dir}")
+
+        self.__logger.info("Remote setup is done.")
 
         try:
-            print(self.ssh_manager.exec(f"{self.environment_config['environmentDir']}/executor.bash"))
+            # Execute tests
+            self.__ssh_manager.exec_async(f"{env_dir}/medusaTestsExec.bash &")
+            self.__logger.info("Started testing...")
 
-            self.logger.info("Testing has finished.")
+            # Wait for testing to exit
+            self.__check_execution_status()
 
-            print(self.ssh_manager.exec(f"sudo cat {self.environment_config['environmentDir']}/results"))
+            self.__logger.info("Testing has finished.")
 
-            print(self.ssh_manager.exec(f"sudo cat {self.environment_config['environmentDir']}/results_details"))
+            # Download results
+            self.__logger.info("Fetching results...")
+            self.__ssh_manager.download_results(env_dir)
+            self.__logger.info("Results ready.")
+
+            # Clean target
+            self.__logger.info("Running cleanup...")
+            self.__ssh_manager.clean_target(env_dir)
+            self.__logger.info("Cleanup done.")
         except Exception as e:
-            self.logger.error(e, "Test run failed. See log file for more information.")
+            self.__logger.error(e, "Test run failed. See log files for more information.")
         finally:
-            self.ssh_manager.disconnect()
+            self.__ssh_manager.disconnect()
+            self.__connection_active = False
 
 

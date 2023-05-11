@@ -1,6 +1,6 @@
-import os
 import queue
 import threading
+
 import pexpect
 
 

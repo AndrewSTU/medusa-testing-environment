@@ -1,4 +1,4 @@
-- name: Semop performance
+- name: Semop performance Constable ON
   type: GIT
   use_constable: true
   constable: |
@@ -13,4 +13,19 @@
     results:
       constable: ipc_
       dmesg: SEMOP
+      return_code: 0
+
+- name: Semop performance Constable OFF
+  type: GIT
+  use_constable: false
+  constable: |
+    * ipc_semop * {
+      log_proc("SEMOP");
+      return ALLOW;
+    }
+  setup:
+    - make -C ipc/
+  execution:
+    command: python3 ipc/sem_performance_test_runner.py
+    results:
       return_code: 0

@@ -1,31 +1,43 @@
 import os
 import pickle
-
-import git
 import subprocess
+
 import yaml
-import shutil
 
 from mte.logger import Logger
 
 
 class TestManager:
-    logger = Logger()
+    """
+    Class that manages tests and results.
+    """
+    __logger = Logger()
 
     def __init__(self):
+        """
+        Initializes Test manager.
+        Loads all necessary paths needed for execution.
+        """
         # Obtain tests directory
         file_dir = os.path.dirname(os.path.abspath(__file__))
         self.__tests_dir = os.path.join(file_dir, "tests")
         self.__git_dir = os.path.join(self.__tests_dir, "medusa-tests")
-        self.__transport_dir = os.path.join(file_dir, "remote")
+        self.__transport_dir = os.path.join(file_dir, "target")
+        self.__results_dir = os.path.join(file_dir, "results")
 
         self.__update_git()
 
     def list_tests(self):
-        self.logger.debug("Listing local tests...")
+        """
+        Lists and registers all tests in YAML files present in test directory.
+        @return: List of available tests.
+        """
+        self.__logger.debug("Listing local tests...")
         tests = []
 
+        # List through tests dir
         for subdir, dirs, files in os.walk(self.__tests_dir):
+            # Exclude medusa tests
             if "medusa-tests" in dirs:
                 dirs.remove("medusa-tests")
 
@@ -38,64 +50,108 @@ class TestManager:
                         data = yaml.safe_load(f)
 
                         if data:
+                            # Extend test with location information
                             tests.extend(
                                 [
                                     self.__transform_test(d, d["name"], file, test_relative_path) for d in data
                                 ]
                             )
-        self.logger.debug("Listing local tests complete.")
+
+        self.__logger.debug("Listing local tests complete.")
         return tests
 
-    def cleanup(self):
-        self.logger.debug("Running test cleanup...")
-
-        transport_dir = os.path.join(self.__tests_dir, "/transfer")
-        if os.path.exists(transport_dir):
-            shutil.rmtree(transport_dir)
-
-        self.logger.debug("Test cleanup complete.")
-
     def prepare_tests(self, tests, test_env):
-        self.logger.info("Preparing tests for transfer...")
+        """
+        Wrapper method for preparing tests.
+
+        @param tests:
+        @param test_env:
+        """
+        self.__logger.info("Preparing tests for transfer...")
 
         self.__prepare_configs(test_env)
 
-        self.__prepare_test(tests)
+        self.__prepare_tests(tests)
 
-        self.logger.info("Tests are ready for transfer.")
+        self.__logger.info("Tests are ready for transfer.")
+
+    def load_results(self):
+        """
+        Loads test results from results.txt if present.
+        @return: Test results string.
+        """
+
+        results = None
+        try:
+            # Try to open results file
+            with open(os.path.join(self.__results_dir, "results.txt"), "r") as f:
+                results = f.read()
+                f.close()
+        except Exception as e:
+            self.__logger.debug("Results do not exist")
+        return results
 
     def __prepare_configs(self, tests_env):
+        """
+        Prepares configuration files Constable and Medusa configuration.
+        Formats files to contain path to testing environment, where the configurations will be transferred.
+
+        @param tests_env: remote testing location.
+        """
         # Prepare constable config
         with open(os.path.join(self.__tests_dir, "constable.conf"), "r") as f:
+            # Load
             constable_content = f.read()
 
+        # Replace
         new_content = constable_content.replace("{@TEST_ENV}", tests_env)
 
         with open(os.path.join(self.__transport_dir, "constable.conf"), "w") as f:
+            # Save
             f.write(new_content)
 
         # Prepare medusa-template.conf
         with open(os.path.join(self.__tests_dir, "medusa-template.conf"), "r") as f:
+            # Load
             constable_content = f.read()
 
+        # Replace
         new_content = constable_content.replace("{@TEST_ENV}", tests_env)
 
         with open(os.path.join(self.__transport_dir, "medusa-template.conf"), "w") as f:
+            # Save
             f.write(new_content)
 
-    def __prepare_test(self, tests):
+    def __prepare_tests(self, tests):
+        """
+        Saves tests into transport_dir in .pickle format.
+
+        @param tests: selected tests for transfer.
+        """
         if not os.path.exists(self.__transport_dir):
             os.makedirs(self.__transport_dir)
 
         file = os.path.join(self.__transport_dir, "local.pickle")
 
+        # Remove selected attribute
         for t in tests:
             del t["selected"]
 
+        # Dump to file
         with open(file, "wb") as f:
             pickle.dump(tests, f)
 
     def __transform_test(self, test, name, suit, src):
+        """
+        Helper for transformation of test when loaded from test file.
+
+        @param test: test dictionary
+        @param name: name.
+        @param suit: suit name.
+        @param src: source.
+        @return: transformed complete test
+        """
+        # Add required keys
         test["name"] = name
         test["suit"] = suit
         test["src"] = src
@@ -104,21 +160,21 @@ class TestManager:
         return test
 
     def __update_git(self):
+        """
+        Updates git tests submodule - Medusa Tests.
+        """
         try:
-            if os.path.exists(self.__git_dir):
-                self.logger.debug("Git tests are present, checking for updates...")
-                result = subprocess.run(["git", "pull"], cwd=self.__git_dir, capture_output=True, text=True)
+            # Run git update
+            self.__logger.debug("Updating git tests, checking for updates...")
+            result = subprocess.run(["git", "submodule", "update"], cwd=self.__git_dir, capture_output=True, text=True)
 
-                if result.returncode == 0:
-                    self.logger.debug("Updated git tests.")
-                else:
-                    self.logger.error(RuntimeError("Git pull failed for unknown reason. Check your internet connection and git installation"))
+            # Check result
+            if result.returncode == 0:
+                self.__logger.debug("Git tests up to date.")
             else:
-                self.logger.debug("Missing git tests. Downloading repo...")
-                git.Repo.clone_from("https://github.com/Medusa-Team/medusa-tests", self.__git_dir)
-                self.logger.debug("Downloaded git tests.")
+                raise RuntimeError(result.stderr)
         except Exception as e:
-            self.logger.error(e, "Updating git tests failed. See log file.")
+            self.__logger.error(e, "Updating git tests failed. See log file.")
 
 
 

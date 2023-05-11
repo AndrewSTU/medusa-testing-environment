@@ -1,5 +1,6 @@
 import configparser as cp
 import os
+
 from mte.logger import Logger
 
 
@@ -25,16 +26,15 @@ class ConfigurationManager:
         """
         Returns the configuration for a specific section or all the configuration.
 
-        :param section: Optional section to retrieve configuration for.
-        :type section: str or None
-        :raises KeyError: If specified section is not found in configuration.
-        :return: Configuration for specified section or all the configuration.
-        :rtype: configparser.ConfigParser or configparser.SectionProxy
+        @param section: Desired section to be fetched.
+        @return:
         """
         if section is None or section == "":
+            # Section not present, return whole config
             return self.__config
 
         if section not in self.__config.sections():
+            # Section doesnt exist
             e = f"Section {section} not found in configuration."
             self.logger.error(KeyError(e), e)
             raise KeyError(e)
