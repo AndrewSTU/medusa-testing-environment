@@ -42,7 +42,7 @@ class SSHManager:
         except Exception as e:
             self.__logger.error(e, "Failed to connect to SSH server")
 
-    def exec(self, command, timeout=False, log_error=False):
+    def exec(self, command, timeout=False, log_error=True):
         """
         Execute command through ssh and wait for response.
         If timeout is set, waits for response for 10 seconds, then throws exception.
@@ -53,7 +53,6 @@ class SSHManager:
         @return: shell command response.
         """
         timeout_val = 10 if timeout else None
-        print(timeout_val)
         try:
             stdin, stdout, stderr = self.ssh.exec_command(command, timeout=timeout_val)
         except socket.timeout:
@@ -69,7 +68,7 @@ class SSHManager:
         # Check if resulted in error
         if exit_status != 0:
             e = IOError(f"SSH command: {command} failed: \n{error}")
-            if not log_error:
+            if log_error:
                 self.__logger.error(IOError(e, "Error while executing ssh command."))
             else:
                 raise IOError(e)
@@ -219,7 +218,7 @@ class SSHManager:
         # Clear dirs
         for d in dirs:
             try:
-                self.exec(f"sudo rm -r {env_path}/{d}", log_error=True)
+                self.exec(f"sudo rm -r {env_path}/{d}", log_error=False)
             except OSError as e:
                 if d != 'medusa-tests':
                     raise e

@@ -110,7 +110,7 @@ def execute(test, constable):
 
     return out_std, out_constable, out_dmesg
 
-def run_test(test, validator):
+def run_single_test(test, validator):
     """
     Main execution function for test.
 
@@ -173,6 +173,65 @@ def run_test(test, validator):
         if constable:
             constable.terminate()
 
+def run_multiple(tests, validator):
+    logger.info(f"Creating constable.")
+    create_constable()
+
+    # Setup block
+    for test in tests:
+        try:
+            # Run setup for each test
+            if has_key(test, "setup"):
+                logger.info(f"{test['name']}: running setup.")
+                execute_handlers(test, "setup")
+
+            # Add configuration to constable for each test
+            if has_key(test, "constable"):
+                add_to_constable(test["constable"])
+        except Exception as e:
+            logger.error(e)
+
+    # Start Constable
+    constable = Reader(f"sudo constable {env_root}/constable.conf")
+    time.sleep(.5)
+
+    # Execution block
+    for test in tests:
+        try:
+            # Run pre-execution
+            if has_key(test, "pre-execution"):
+                logger.info(f"{test['name']}: running pre-execution.")
+                execute_handlers(test, "pre-execution")
+
+            # Run execution
+            logger.info(f"{test['name']}: executing.")
+            out_std, out_constable, out_dmesg = execute(test, constable)
+
+            # Validate results
+            validator.validate(test, out_std, out_constable, out_dmesg)
+
+            # Run post execution
+            if has_key(test, "post-execution"):
+                logger.info(f"{test['name']}: running post-execution.")
+                execute_handlers(test, "post-execution")
+        except Exception as e:
+            validator.failed(test, e)
+
+    # Stop Constable
+    if constable:
+        constable.terminate()
+        logger.info(f"Terminated Constable.")
+
+    # Cleanup block
+    for test in tests:
+        try:
+            if has_key(test, "cleanup"):
+                logger.info(f"{test['name']}: running cleanup.")
+                execute_handlers(test, "cleanup")
+        except Exception as e:
+            logger.error(e)
+
+
 def run_local_tests(tests, validator):
     """
     Runs and handles LOCAL tests.
@@ -180,11 +239,21 @@ def run_local_tests(tests, validator):
     @param tests: LOCAL tests
     @param validator: test validator instance.
     """
-    # Execute tests
-    for test in tests:
-        logger.info(f"Running local test: {test['name']}")
-        run_test(test, validator)
-        time.sleep(2)
+    # Group by source file
+    grouped_tests = {}
+
+    logger.debug("Grouping suites.")
+    for t in tests:
+        src = t['src']
+        if src not in grouped_tests:
+            grouped_tests[src] = []
+        grouped_tests[src].append(t)
+
+    for k in grouped_tests.keys():
+        logger.info(f"Running tests for suite: {src}")
+
+        run_multiple(grouped_tests[k], validator)
+        time.sleep(3)
 
 def run_git_tests(tests, validator):
     """
@@ -202,8 +271,8 @@ def run_git_tests(tests, validator):
     # Execute tests
     for test in tests:
         logger.info(f"Running git test: {test['name']}")
-        run_test(test, validator)
-        time.sleep(1)
+        run_single_test(test, validator)
+        time.sleep(3)
 
     # Navigate back to env
     os.chdir(env_root)
@@ -260,4 +329,4 @@ if __name__ == "__main__":
     except Exception as e:
         logger.error(str(e))
         record_execution_result("ERROR")
-        quit(1)
+        quit()

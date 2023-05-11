@@ -35,7 +35,7 @@ class RemoteManager:
         if self.__using_vb:
             if not vm_name:
                 self.__logger.error(ValueError("Missing VM name."), "Missing VM name.")
-            self.__validate_vm(vm_name)
+            #self.__validate_vm(vm_name)
 
     def connect(self):
         """
@@ -69,7 +69,7 @@ class RemoteManager:
                 if self.__using_vb and not time_out:
                     # This block is intended for freshly started VM to wait for complete boot run.
                     # Sleep value is set high. Depends on target system.
-                    time.sleep(90)
+                    time.sleep(100)
                 break
 
             time.sleep(2)
@@ -107,6 +107,8 @@ class RemoteManager:
         Starts the VM in VirtualBox and waits until it is running.
         """
         try:
+            self.__validate_vm(self.__vm_name)
+
             self.__logger.debug("Checking virtual machine...")
             session = vb.Session()
 

@@ -144,31 +144,34 @@ class TestExecutor:
         """
         env_dir = self.__environment_config["environmentDir"]
 
-        while True:
+        self.__ssh_manager.disconnect()
+        time.sleep(5)
 
+        while True:
             self.__logger.info("Validating remote...")
 
             try:
-                self.__ssh_manager.exec("pgrep medusaTestsExec", timeout=True, log_error=True)
+                # Test connection
+                self.__ssh_manager.connect()
 
-            except TimeoutError as e:
-                # Took to long -> VM is frozen
-                self.__logger.error(e, "Remote is not responding, remote is most likely frozen.")
-            except IOError:
-                # Executor has finished
+                # Check if still runnning
                 try:
-                    # Check execution result
-                    result = self.__ssh_manager.exec(f"cat {env_dir}/exit")
-                    if result != "SUCCESS":
-                        raise IOError("Error in test execution.")
-                    else:
-                        break
-                except IOError as e:
-                    # Error in execution, try to download log
-                    self.__ssh_manager.download_results(env_dir, True)
-                    self.__logger.error(e, "Execution on remote resulted in error")
+                    self.__ssh_manager.exec("pgrep medusaTestsExec", timeout=True, log_error=False)
+                except IOError:
+                    # pgrep returned 1 = proces stopped
+                    break
+
+                self.__ssh_manager.disconnect()
+            except:
+                self.__ssh_manager.disconnect()
+                self.__logger.error(OSError, "Remote is not responding, remote is most likely frozen.")
 
             time.sleep(5)
+
+        result = self.__ssh_manager.exec(f"cat {env_dir}/exit")
+        if result != "SUCCESS":
+            self.__ssh_manager.download_results(env_dir, True)
+            self.__logger.error(IOError("Test failed."), "Execution on remote resulted in error")
 
     def __execution_thread_target(self, selected_tests):
         """
@@ -214,6 +217,8 @@ class TestExecutor:
             self.__logger.info("Running cleanup...")
             self.__ssh_manager.clean_target(env_dir)
             self.__logger.info("Cleanup done.")
+        except IOError:
+            pass
         except Exception as e:
             self.__logger.error(e, "Test run failed. See log files for more information.")
         finally:

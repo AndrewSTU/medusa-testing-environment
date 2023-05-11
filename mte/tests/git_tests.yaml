@@ -8,6 +8,7 @@
     }
   setup:
     - make -C ipc/
+    - pip install psutil
   execution:
     command: python3 ipc/sem_performance_test_runner.py
     results:
@@ -25,6 +26,7 @@
     }
   setup:
     - make -C ipc/
+    - pip install psutil
   execution:
     command: python3 ipc/sem_performance_test_runner.py
     results:
