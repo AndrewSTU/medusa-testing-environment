@@ -166,7 +166,7 @@ class TestManager:
         try:
             # Run git update
             self.__logger.debug("Updating git tests, checking for updates...")
-            result = subprocess.run(["git", "submodule", "update"], cwd=self.__git_dir, capture_output=True, text=True)
+            result = subprocess.run(["git", "submodule", "update", "--init", "--recursive"], cwd=self.__git_dir, capture_output=True, text=True)
 
             # Check result
             if result.returncode == 0:
