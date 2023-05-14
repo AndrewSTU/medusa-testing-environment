@@ -46,6 +46,7 @@ py vboxapisetup.py install
 pip install pywin32
 ```
 5. Enable Virtual box port forwarding for VM in `settings > network > advanced > port forwarding` and add rule:
+
 ![VM machine setup example](vm_setup.PNG)
 
 # Running environment
